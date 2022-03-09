@@ -1,4 +1,4 @@
-from flask import Flask,render_template, url_for
+from flask import Flask,render_template, url_for, redirect
 import pandas as pd
 import os
 from os import listdir
@@ -9,30 +9,32 @@ parser = argparse.ArgumentParser()
 
 app = Flask(__name__)
 
-from_data = False
 parser.add_argument('--folder', type=str, default = '')
+parser.add_argument('--datasheet', type=str, default = '')
 args = parser.parse_args()
 
 print(args.folder)
 
-if from_data:
-	images = pd.read_csv("images.csv")
-	people = images[images['ooi']=='person']
-	urls = people['s3_transformed'].values
-	ids = people['Unnamed: 0'].values
+if args.folder == '' and args.datasheet == "":
+	print("no data specified...")
+elif args.folder == '':
+	images = pd.read_csv(args.datasheet)
+	urls = images['urls'].values
+	ids = images['index'].values
 	num_pages = int(float(len(ids))/100)
 else:
-	folder = 'contentwarning_generations5'
-	mypath= "static/data/" + folder
+	mypath= "static/data/" + args.folder
 	onlyfiles = [f for f in listdir(mypath) if isfile(join(mypath, f))]
 	onlyfiles_abs = [mypath.replace("static/","") + "/" + f.replace(" "," ") for f in listdir(mypath) if isfile(join(mypath, f))]
 	df = pd.DataFrame({"name":onlyfiles, "url": onlyfiles_abs, "index" : range(1,1+len(onlyfiles))})
-	df.to_csv("static/data/{}.csv".format(folder))
+	df.to_csv("static/data/{}.csv".format(args.folder))
 	urls = df['url']
 	ids = df['index']
 	num_pages = int(float(len(ids))/100)
 
-
+@app.route('/')
+def hello_world_base():
+	return(redirect(url_for('hello_world', page=0)))
 
 @app.route('/<page>')
 def hello_world(page):
